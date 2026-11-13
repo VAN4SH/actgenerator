@@ -1,0 +1,7 @@
+generator/settings.json
+generator/fields.json
+Готовые/*
+!Готовые/.gitkeep
+~$*
+*.tmp
+Thumbs.db
