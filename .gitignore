@@ -1,7 +1,8 @@
 generator/settings.json
 generator/fields.json
-Готовые/*
-!Готовые/.gitkeep
+Р“РѕС‚РѕРІС‹Рµ/*
+!Р“РѕС‚РѕРІС‹Рµ/.gitkeep
 ~$*
 *.tmp
 Thumbs.db
+docs/

@@ -1098,9 +1098,9 @@ $chkSns.Checked = $true
 # --- мелкие удобства ---
 # номер договора: курсор всегда в конец (чтобы не затереть «СТКБ-» и вводить только цифры)
 $tbNomer.Add_Enter({
-  $tb = $this
-  $sb = { $tb.SelectionStart = $tb.Text.Length; $tb.SelectionLength = 0 }.GetNewClosure()
-  [void]$tb.BeginInvoke([Action]$sb)
+  # переменная скрипта $tbNomer доступна и позже, когда сработает отложенный вызов
+  # (локальная $tb к тому моменту уже исчезла - отсюда была ошибка "variable '$tb' cannot be retrieved")
+  [void]$tbNomer.BeginInvoke([Action]{ $tbNomer.SelectionStart = $tbNomer.Text.Length; $tbNomer.SelectionLength = 0 })
 })
 # при выходе из поля убираем двойные пробелы, «г.Москва» -> «г. Москва» и т.п.
 foreach ($c in @($cmbZak, $cmbGorod, $cmbGorodIsp, $tbAdres, $tbIzpDolzh, $tbZakFio1, $tbZakDolzh1, $tbZakFio2, $tbZakDolzh2)) {
