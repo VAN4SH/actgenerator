@@ -487,17 +487,27 @@ $pnlTls = New-SubPanel 62
 $tbTlsSerial = Add-Row $pnlTls 'Заводской номер TLS Клиент' 2 150
 $tbTlsReg = Add-IdRow $pnlTls 'Рег. номер (цифры)' 32 'TLSREG' 'например 1109: 1073Б1-001109'
 # ViPNet
-$pnlVip = New-SubPanel 92
-$null = New-Lbl $pnlVip 'Название в акте' $LX 2
-$cmbVipTitle = New-Cmb $pnlVip $BX 2 560 'DropDown'
+$pnlVip = New-SubPanel 122
+$null = New-Lbl $pnlVip 'Исполнение' $LX 2
+$cmbVipKs = New-Cmb $pnlVip $BX 2 80 'DropDownList'
+[void]$cmbVipKs.Items.AddRange(@('КС1', 'КС2', 'КС3'))
+$cmbVipKs.SelectedItem = 'КС2'
+$lblVipKsHint = New-Object System.Windows.Forms.Label
+$lblVipKsHint.Location = New-Object System.Drawing.Point(($BX + 90), 5)
+$lblVipKsHint.Size = New-Object System.Drawing.Size(470, 20)
+$lblVipKsHint.ForeColor = [System.Drawing.Color]::DimGray
+$lblVipKsHint.Text = 'меняет префикс серийного № (КлКСn-4-) и подстановку в названии'
+$pnlVip.Controls.Add($lblVipKsHint)
+$null = New-Lbl $pnlVip 'Название в акте' $LX 32
+$cmbVipTitle = New-Cmb $pnlVip $BX 32 560 'DropDown'
 [void]$cmbVipTitle.Items.Add('Программный комплекс ViPNet Client for Windows 4.х (КС2)')
 [void]$cmbVipTitle.Items.Add('Программный комплекс ViPNet Client 4 (версия 4.5)')
 $cmbVipTitle.SelectedIndex = 0
-$tbVipSerial = Add-IdRow $pnlVip 'Серийный № (6 цифр)' 32 'VIPSN' 'КлКС2-4-XXXXXX'
-$null = New-Lbl $pnlVip 'Рег. № СКЗИ' $LX 62
-$tbVipReg = New-Txt $pnlVip $BX 62 150
+$tbVipSerial = Add-IdRow $pnlVip 'Серийный № (6 цифр)' 62 'VIPSN' 'КлКС2-4-XXXXXX'
+$null = New-Lbl $pnlVip 'Рег. № СКЗИ' $LX 92
+$tbVipReg = New-Txt $pnlVip $BX 92 150
 $lblVipReg = New-Object System.Windows.Forms.Label
-$lblVipReg.Location = New-Object System.Drawing.Point(($BX + 160), 65)
+$lblVipReg.Location = New-Object System.Drawing.Point(($BX + 160), 95)
 $lblVipReg.Size = New-Object System.Drawing.Size(460, 20)
 $lblVipReg.ForeColor = [System.Drawing.Color]::DimGray
 $lblVipReg.Text = 'считается сам: 782-(серийный + 971); можно исправить вручную'
@@ -762,8 +772,36 @@ function Save-Customer {
   $script:Settings.Customers = @($list.ToArray() | Select-Object -First 300)
 }
 
-# --- ViPNet: рег. номер считается сам ---
+# --- ViPNet: исполнение КС1/КС2/КС3 и рег. номер ---
 $script:VipRegAuto = $true
+function Update-VipKs {
+  $ks = Set-VipSnPrefix ([string]$cmbVipKs.SelectedItem)
+  $withKs = 'Программный комплекс ViPNet Client for Windows 4.х ({0})' -f $ks
+  $alt = 'Программный комплекс ViPNet Client 4 (версия 4.5)'
+  $old = [string]$cmbVipTitle.Text
+  $cmbVipTitle.Items.Clear()
+  [void]$cmbVipTitle.Items.Add($withKs)
+  [void]$cmbVipTitle.Items.Add($alt)
+  if ([string]::IsNullOrWhiteSpace($old) -or $old -match 'Windows 4\.х \(КС[123]\)') {
+    $cmbVipTitle.Text = $withKs
+  } elseif ($old -eq $alt) {
+    $cmbVipTitle.Text = $alt
+  } elseif ($old -match '\(КС[123]\)') {
+    $cmbVipTitle.Text = ($old -replace '\(КС[123]\)', ('({0})' -f $ks))
+  } else {
+    $cmbVipTitle.Text = $old
+  }
+  $info = $tbVipSerial.Tag
+  $info.Hint = ('Кл{0}-4-XXXXXX' -f $ks)
+  $full = Compose-Id 'VIPSN' $tbVipSerial.Text
+  if ($full -eq '') { $info.Preview.Text = $info.Hint } else { $info.Preview.Text = 'в акте: ' + $full }
+  if ($script:VipRegAuto) {
+    $script:Sync = $true
+    $tbVipReg.Text = Get-VipReg (Compose-Id 'VIPSN' $tbVipSerial.Text)
+    $script:Sync = $false
+  }
+}
+$cmbVipKs.Add_SelectedIndexChanged({ Update-VipKs })
 $tbVipReg.Add_TextChanged({ if (-not $script:Sync) { $script:VipRegAuto = ($tbVipReg.Text.Trim() -eq '') } })
 $tbVipSerial.Add_TextChanged({
   if ($script:VipRegAuto) {
@@ -918,6 +956,8 @@ $btnClear.Add_Click({
   $cmbZak.Text = ''; $tbAdres.Text = ''; $tbZakRod.Text = ''; $tbZakRod.Tag = 'auto'
   $tbNomer.Text = 'СТКБ-'
   foreach ($t in @($tbSnsId, $tbDlId, $tbTlsSerial, $tbTlsReg, $tbVipSerial, $tbVipReg, $tbKpId, $tbZakFio1, $tbZakDolzh1, $tbZakFio2, $tbZakDolzh2)) { $t.Text = '' }
+  $cmbVipKs.SelectedItem = 'КС2'
+  Update-VipKs
   $script:VipRegAuto = $true
   $dgv.Rows.Clear()
   $script:Products.Clear()
@@ -1037,7 +1077,7 @@ $btnGen.Add_Click({
       HasSns = $chkSns.Checked; Sns30 = $chkSns30.Checked; SnsIdent = $tbSnsId.Text.Trim(); SnsModules = $mods
       HasDl = $chkDl.Checked; DlIdent = $tbDlId.Text.Trim()
       HasTls = $chkTls.Checked; TlsSerial = $tbTlsSerial.Text.Trim(); TlsReg = $tbTlsReg.Text.Trim()
-      HasVip = $chkVip.Checked; VipTitle = $cmbVipTitle.Text.Trim(); VipSerial = $tbVipSerial.Text.Trim(); VipReg = $tbVipReg.Text.Trim()
+      HasVip = $chkVip.Checked; VipKs = [string]$cmbVipKs.SelectedItem; VipTitle = $cmbVipTitle.Text.Trim(); VipSerial = $tbVipSerial.Text.Trim(); VipReg = $tbVipReg.Text.Trim()
       HasKp = $chkKp.Checked; KpIdent = $tbKpId.Text.Trim()
       Workplaces    = $rows
       Products      = $prodList
@@ -1125,7 +1165,8 @@ $tip.SetToolTip($cmbZak, 'Выберите из списка: адрес, гор
 $tip.SetToolTip($tbNomer, 'Достаточно дописать цифры после «СТКБ-»')
 $tip.SetToolTip($tbSnsId, 'Только последние 6 цифр - префикс РОСС RU.01.03745. добавится сам')
 $tip.SetToolTip($tbDlId, 'Только последние 6 цифр - префикс добавится сам')
-$tip.SetToolTip($tbVipSerial, 'Только цифры после КлКС2-4-; регистрационный номер посчитается сам')
+$tip.SetToolTip($cmbVipKs, 'КС1 / КС2 / КС3 — меняет префикс серийного номера и (КСn) в названии')
+$tip.SetToolTip($tbVipSerial, 'Только цифры после КлКСn-4- (n из «Исполнение»); регистрационный номер посчитается сам')
 $tip.SetToolTip($chkAutoClear, 'После создания документов форма очистится (заказчик останется в списке)')
 $tip.SetToolTip($dgv, 'Одна строка - пункты 6.3-6.5. Несколько строк - таблица')
 

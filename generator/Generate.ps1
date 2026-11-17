@@ -214,6 +214,7 @@ function Fill-ActDogovor($doc) {
   $map['{{KP_IDENT}}'] = (Compose-Id 'KP' (DS 'KpIdent'))
   $map['{{TLS_SERIAL}}'] = (DS 'TlsSerial')
   $map['{{TLS_REG}}'] = (Compose-Id 'TLSREG' (DS 'TlsReg'))
+  $vipKs = Set-VipSnPrefix (DS 'VipKs')
   $vipSerial = Compose-Id 'VIPSN' (DS 'VipSerial')
   $vipReg = DS 'VipReg'
   if ($vipReg -eq '') { $vipReg = Get-VipReg $vipSerial }
@@ -221,7 +222,7 @@ function Fill-ActDogovor($doc) {
   $map['{{VIPNET_SERIAL}}'] = $vipSerial
   $map['{{VIPNET_REG}}'] = $vipReg
   $vt = DS 'VipTitle'
-  if ($vt -eq '') { $vt = 'Программный комплекс ViPNet Client for Windows 4.х (КС2)' }
+  if ($vt -eq '') { $vt = ('Программный комплекс ViPNet Client for Windows 4.х ({0})' -f $vipKs) }
   $map['{{VIPNET_TITLE}}'] = $vt.TrimEnd(':')
 
   Replace-Map $doc.Content $map

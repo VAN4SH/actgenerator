@@ -20,6 +20,14 @@ $script:IdRules = @{
 }
 $script:VipRegOffset = 971
 
+# Исполнение ViPNet Client: КС1 / КС2 / КС3 → префикс серийного № КлКСn-4-
+function Set-VipSnPrefix([string]$ks) {
+  $k = ([string]$ks).Trim()
+  if ($k -notmatch '^КС[123]$') { $k = 'КС2' }
+  $script:IdRules['VIPSN'] = @(('Кл{0}-4-' -f $k), 0)
+  return $k
+}
+
 $script:Months = @{
   1 = 'января'; 2 = 'февраля'; 3 = 'марта'; 4 = 'апреля'; 5 = 'мая'; 6 = 'июня'
   7 = 'июля'; 8 = 'августа'; 9 = 'сентября'; 10 = 'октября'; 11 = 'ноября'; 12 = 'декабря'
